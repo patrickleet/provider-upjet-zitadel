@@ -111,6 +111,8 @@ func TestIdentityArgumentsAreNotReferences(t *testing.T) {
 		{"zitadel_organization", "org_id"},
 		{"zitadel_webkey", "org_id"},
 		{"zitadel_active_webkey", "org_id"},
+		{"zitadel_human_user", "user_id"},
+		{"zitadel_machine_user", "user_id"},
 	} {
 		for scope, p := range bothProviders() {
 			if ref, ok := p.Resources[tc.resource].References[tc.field]; ok {
@@ -158,5 +160,91 @@ func TestClusterDomainPolicyOrganizationReference(t *testing.T) {
 	}
 	if got := policy.Spec.ForProvider.OrgID; got == nil || *got != "organization-id" {
 		t.Fatalf("resolved unexpected organization: %v", got)
+	}
+}
+
+// Org members and org metadata keep resolving org_id from the Org kind, so
+// existing references are unchanged. (Organization-managed orgs set orgId
+// directly until an Organization-scoped administrator resource exists.)
+func TestOrgMemberAndMetadataKeepOrgReference(t *testing.T) {
+	for _, resource := range []string{"zitadel_org_member", "zitadel_org_metadata"} {
+		assertReference(t, resource, "org_id", ujconfig.Reference{TerraformName: "zitadel_org"})
+	}
+}
+
+func TestUserIDReferencesHumanUser(t *testing.T) {
+	want := ujconfig.Reference{
+		TerraformName:     "zitadel_human_user",
+		RefFieldName:      "HumanUserIDRef",
+		SelectorFieldName: "HumanUserIDSelector",
+	}
+	for _, resource := range []string{
+		"zitadel_instance_member",
+		"zitadel_org_member",
+		"zitadel_project_grant_member",
+		"zitadel_project_member",
+		"zitadel_user_grant",
+		"zitadel_user_metadata",
+	} {
+		t.Run(resource, func(t *testing.T) {
+			assertReference(t, resource, "user_id", want)
+		})
+	}
+}
+
+var personaLabels = map[string]string{"example.org/persona": "owner"}
+
+func TestOrgMemberHumanUserSelector(t *testing.T) {
+	human := &user.HumanUser{ObjectMeta: metav1.ObjectMeta{
+		Name: "owner", Namespace: "tenant", Labels: personaLabels,
+		Annotations: map[string]string{"crossplane.io/external-name": "user-id"},
+	}}
+	other := &user.HumanUser{ObjectMeta: metav1.ObjectMeta{
+		Name: "owner", Namespace: "other-tenant", Labels: personaLabels,
+		Annotations: map[string]string{"crossplane.io/external-name": "wrong-user"},
+	}}
+	member := &org.Member{ObjectMeta: metav1.ObjectMeta{Name: "owner", Namespace: "tenant"}}
+	member.Spec.ForProvider.HumanUserIDSelector = &xpv1.NamespacedSelector{MatchLabels: personaLabels}
+	c := refClient(t, human, other)
+	if err := member.ResolveReferences(context.Background(), c); err != nil {
+		t.Fatal(err)
+	}
+	if got := member.Spec.ForProvider.UserID; got == nil || *got != "user-id" {
+		t.Fatalf("resolved unexpected user: %v", got)
+	}
+	if got := member.Spec.ForProvider.HumanUserIDRef; got == nil || got.Name != human.Name {
+		t.Fatalf("reference was not persisted: %v", got)
+	}
+}
+
+func TestClusterOrgMemberHumanUserReference(t *testing.T) {
+	human := &clusteruser.HumanUser{ObjectMeta: metav1.ObjectMeta{
+		Name:        "owner",
+		Annotations: map[string]string{"crossplane.io/external-name": "user-id"},
+	}}
+	member := &clusterorg.Member{ObjectMeta: metav1.ObjectMeta{Name: "owner"}}
+	member.Spec.ForProvider.HumanUserIDRef = &xpv1.Reference{Name: human.Name}
+	if err := member.ResolveReferences(context.Background(), refClient(t, human)); err != nil {
+		t.Fatal(err)
+	}
+	if got := member.Spec.ForProvider.UserID; got == nil || *got != "user-id" {
+		t.Fatalf("resolved unexpected user: %v", got)
+	}
+}
+
+// userId accepts any ZITADEL user, so a literal MachineUser ID must keep
+// working alongside the HumanUser reference fields.
+func TestUserGrantLiteralMachineUserID(t *testing.T) {
+	machineUserID := "machine-user-id"
+	grant := &user.Grant{ObjectMeta: metav1.ObjectMeta{Name: "automation", Namespace: "tenant"}}
+	grant.Spec.ForProvider.UserID = &machineUserID
+	if err := grant.ResolveReferences(context.Background(), refClient(t)); err != nil {
+		t.Fatal(err)
+	}
+	if got := grant.Spec.ForProvider.UserID; got == nil || *got != machineUserID {
+		t.Fatalf("literal user changed: %v", got)
+	}
+	if grant.Spec.ForProvider.HumanUserIDRef != nil {
+		t.Fatalf("unexpected reference for literal user: %v", grant.Spec.ForProvider.HumanUserIDRef)
 	}
 }

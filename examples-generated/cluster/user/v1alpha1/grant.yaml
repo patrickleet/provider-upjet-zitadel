@@ -8,6 +8,9 @@ metadata:
   name: default
 spec:
   forProvider:
+    humanUserIdSelector:
+      matchLabels:
+        testing.upbound.io/example-name: zitadel_human_user
     orgIdSelector:
       matchLabels:
         testing.upbound.io/example-name: zitadel_org
@@ -16,4 +19,3 @@ spec:
         testing.upbound.io/example-name: zitadel_project
     roleKeys:
     - super-user
-    userId: ${data.zitadel_human_user.default.id}

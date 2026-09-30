@@ -16,6 +16,14 @@ import (
 
 type GrantInitParameters struct {
 
+	// Reference to a HumanUser in user to populate userId.
+	// +kubebuilder:validation:Optional
+	HumanUserIDRef *v1.NamespacedReference `json:"humanUserIdRef,omitempty" tf:"-"`
+
+	// Selector for a HumanUser in user to populate userId.
+	// +kubebuilder:validation:Optional
+	HumanUserIDSelector *v1.NamespacedSelector `json:"humanUserIdSelector,omitempty" tf:"-"`
+
 	// (String) ID of the organization. If not provided, the organization of the authenticated user/service account is used.
 	// ID of the organization. If not provided, the organization of the authenticated user/service account is used.
 	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/namespaced/org/v1alpha1.Organization
@@ -62,6 +70,9 @@ type GrantInitParameters struct {
 
 	// (String) ID of the user
 	// ID of the user
+	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/namespaced/user/v1alpha1.HumanUser
+	// +crossplane:generate:reference:refFieldName=HumanUserIDRef
+	// +crossplane:generate:reference:selectorFieldName=HumanUserIDSelector
 	UserID *string `json:"userId,omitempty" tf:"user_id,omitempty"`
 }
 
@@ -94,6 +105,14 @@ type GrantObservation struct {
 
 type GrantParameters struct {
 
+	// Reference to a HumanUser in user to populate userId.
+	// +kubebuilder:validation:Optional
+	HumanUserIDRef *v1.NamespacedReference `json:"humanUserIdRef,omitempty" tf:"-"`
+
+	// Selector for a HumanUser in user to populate userId.
+	// +kubebuilder:validation:Optional
+	HumanUserIDSelector *v1.NamespacedSelector `json:"humanUserIdSelector,omitempty" tf:"-"`
+
 	// (String) ID of the organization. If not provided, the organization of the authenticated user/service account is used.
 	// ID of the organization. If not provided, the organization of the authenticated user/service account is used.
 	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/namespaced/org/v1alpha1.Organization
@@ -144,6 +163,9 @@ type GrantParameters struct {
 
 	// (String) ID of the user
 	// ID of the user
+	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/namespaced/user/v1alpha1.HumanUser
+	// +crossplane:generate:reference:refFieldName=HumanUserIDRef
+	// +crossplane:generate:reference:selectorFieldName=HumanUserIDSelector
 	// +kubebuilder:validation:Optional
 	UserID *string `json:"userId,omitempty" tf:"user_id,omitempty"`
 }
@@ -184,9 +206,8 @@ type GrantStatus struct {
 type Grant struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
-	// +kubebuilder:validation:XValidation:rule="!('*' in self.managementPolicies || 'Create' in self.managementPolicies || 'Update' in self.managementPolicies) || has(self.forProvider.userId) || (has(self.initProvider) && has(self.initProvider.userId))",message="spec.forProvider.userId is a required parameter"
-	Spec   GrantSpec   `json:"spec"`
-	Status GrantStatus `json:"status,omitempty"`
+	Spec              GrantSpec   `json:"spec"`
+	Status            GrantStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true

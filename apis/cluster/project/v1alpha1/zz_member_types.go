@@ -15,6 +15,14 @@ import (
 
 type MemberInitParameters struct {
 
+	// Reference to a HumanUser in user to populate userId.
+	// +kubebuilder:validation:Optional
+	HumanUserIDRef *v1.Reference `json:"humanUserIdRef,omitempty" tf:"-"`
+
+	// Selector for a HumanUser in user to populate userId.
+	// +kubebuilder:validation:Optional
+	HumanUserIDSelector *v1.Selector `json:"humanUserIdSelector,omitempty" tf:"-"`
+
 	// (String) ID of the organization. If not provided, the organization of the authenticated user/service account is used.
 	// ID of the organization. If not provided, the organization of the authenticated user/service account is used.
 	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/cluster/org/v1alpha1.Organization
@@ -48,6 +56,9 @@ type MemberInitParameters struct {
 
 	// (String) ID of the user
 	// ID of the user
+	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/cluster/user/v1alpha1.HumanUser
+	// +crossplane:generate:reference:refFieldName=HumanUserIDRef
+	// +crossplane:generate:reference:selectorFieldName=HumanUserIDSelector
 	UserID *string `json:"userId,omitempty" tf:"user_id,omitempty"`
 }
 
@@ -76,6 +87,14 @@ type MemberObservation struct {
 
 type MemberParameters struct {
 
+	// Reference to a HumanUser in user to populate userId.
+	// +kubebuilder:validation:Optional
+	HumanUserIDRef *v1.Reference `json:"humanUserIdRef,omitempty" tf:"-"`
+
+	// Selector for a HumanUser in user to populate userId.
+	// +kubebuilder:validation:Optional
+	HumanUserIDSelector *v1.Selector `json:"humanUserIdSelector,omitempty" tf:"-"`
+
 	// (String) ID of the organization. If not provided, the organization of the authenticated user/service account is used.
 	// ID of the organization. If not provided, the organization of the authenticated user/service account is used.
 	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/cluster/org/v1alpha1.Organization
@@ -112,6 +131,9 @@ type MemberParameters struct {
 
 	// (String) ID of the user
 	// ID of the user
+	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/cluster/user/v1alpha1.HumanUser
+	// +crossplane:generate:reference:refFieldName=HumanUserIDRef
+	// +crossplane:generate:reference:selectorFieldName=HumanUserIDSelector
 	// +kubebuilder:validation:Optional
 	UserID *string `json:"userId,omitempty" tf:"user_id,omitempty"`
 }
@@ -153,7 +175,6 @@ type Member struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	// +kubebuilder:validation:XValidation:rule="!('*' in self.managementPolicies || 'Create' in self.managementPolicies || 'Update' in self.managementPolicies) || has(self.forProvider.roles) || (has(self.initProvider) && has(self.initProvider.roles))",message="spec.forProvider.roles is a required parameter"
-	// +kubebuilder:validation:XValidation:rule="!('*' in self.managementPolicies || 'Create' in self.managementPolicies || 'Update' in self.managementPolicies) || has(self.forProvider.userId) || (has(self.initProvider) && has(self.initProvider.userId))",message="spec.forProvider.userId is a required parameter"
 	Spec   MemberSpec   `json:"spec"`
 	Status MemberStatus `json:"status,omitempty"`
 }

@@ -177,6 +177,26 @@ func (mg *Grant) ResolveReferences(ctx context.Context, c client.Reader) error {
 	mg.Spec.ForProvider.ProjectID = reference.ToPtrValue(rsp.ResolvedValue)
 	mg.Spec.ForProvider.ProjectIDRef = rsp.ResolvedReference
 	{
+		m, l, err = apisresolver.GetManagedResource("user.zitadel.crossplane.io", "v1alpha1", "HumanUser", "HumanUserList")
+		if err != nil {
+			return errors.Wrap(err, "failed to get the reference target managed resource and its list for reference resolution")
+		}
+
+		rsp, err = r.Resolve(ctx, reference.ResolutionRequest{
+			CurrentValue: reference.FromPtrValue(mg.Spec.ForProvider.UserID),
+			Extract:      reference.ExternalName(),
+			Namespace:    mg.GetNamespace(),
+			Reference:    mg.Spec.ForProvider.HumanUserIDRef,
+			Selector:     mg.Spec.ForProvider.HumanUserIDSelector,
+			To:           reference.To{List: l, Managed: m},
+		})
+	}
+	if err != nil {
+		return errors.Wrap(err, "mg.Spec.ForProvider.UserID")
+	}
+	mg.Spec.ForProvider.UserID = reference.ToPtrValue(rsp.ResolvedValue)
+	mg.Spec.ForProvider.HumanUserIDRef = rsp.ResolvedReference
+	{
 		m, l, err = apisresolver.GetManagedResource("org.zitadel.crossplane.io", "v1alpha1", "Organization", "OrganizationList")
 		if err != nil {
 			return errors.Wrap(err, "failed to get the reference target managed resource and its list for reference resolution")
@@ -236,6 +256,26 @@ func (mg *Grant) ResolveReferences(ctx context.Context, c client.Reader) error {
 	}
 	mg.Spec.InitProvider.ProjectID = reference.ToPtrValue(rsp.ResolvedValue)
 	mg.Spec.InitProvider.ProjectIDRef = rsp.ResolvedReference
+	{
+		m, l, err = apisresolver.GetManagedResource("user.zitadel.crossplane.io", "v1alpha1", "HumanUser", "HumanUserList")
+		if err != nil {
+			return errors.Wrap(err, "failed to get the reference target managed resource and its list for reference resolution")
+		}
+
+		rsp, err = r.Resolve(ctx, reference.ResolutionRequest{
+			CurrentValue: reference.FromPtrValue(mg.Spec.InitProvider.UserID),
+			Extract:      reference.ExternalName(),
+			Namespace:    mg.GetNamespace(),
+			Reference:    mg.Spec.InitProvider.HumanUserIDRef,
+			Selector:     mg.Spec.InitProvider.HumanUserIDSelector,
+			To:           reference.To{List: l, Managed: m},
+		})
+	}
+	if err != nil {
+		return errors.Wrap(err, "mg.Spec.InitProvider.UserID")
+	}
+	mg.Spec.InitProvider.UserID = reference.ToPtrValue(rsp.ResolvedValue)
+	mg.Spec.InitProvider.HumanUserIDRef = rsp.ResolvedReference
 
 	return nil
 }
@@ -465,6 +505,26 @@ func (mg *Metadata) ResolveReferences(ctx context.Context, c client.Reader) erro
 	mg.Spec.ForProvider.OrgID = reference.ToPtrValue(rsp.ResolvedValue)
 	mg.Spec.ForProvider.OrgIDRef = rsp.ResolvedReference
 	{
+		m, l, err = apisresolver.GetManagedResource("user.zitadel.crossplane.io", "v1alpha1", "HumanUser", "HumanUserList")
+		if err != nil {
+			return errors.Wrap(err, "failed to get the reference target managed resource and its list for reference resolution")
+		}
+
+		rsp, err = r.Resolve(ctx, reference.ResolutionRequest{
+			CurrentValue: reference.FromPtrValue(mg.Spec.ForProvider.UserID),
+			Extract:      reference.ExternalName(),
+			Namespace:    mg.GetNamespace(),
+			Reference:    mg.Spec.ForProvider.HumanUserIDRef,
+			Selector:     mg.Spec.ForProvider.HumanUserIDSelector,
+			To:           reference.To{List: l, Managed: m},
+		})
+	}
+	if err != nil {
+		return errors.Wrap(err, "mg.Spec.ForProvider.UserID")
+	}
+	mg.Spec.ForProvider.UserID = reference.ToPtrValue(rsp.ResolvedValue)
+	mg.Spec.ForProvider.HumanUserIDRef = rsp.ResolvedReference
+	{
 		m, l, err = apisresolver.GetManagedResource("org.zitadel.crossplane.io", "v1alpha1", "Organization", "OrganizationList")
 		if err != nil {
 			return errors.Wrap(err, "failed to get the reference target managed resource and its list for reference resolution")
@@ -484,6 +544,26 @@ func (mg *Metadata) ResolveReferences(ctx context.Context, c client.Reader) erro
 	}
 	mg.Spec.InitProvider.OrgID = reference.ToPtrValue(rsp.ResolvedValue)
 	mg.Spec.InitProvider.OrgIDRef = rsp.ResolvedReference
+	{
+		m, l, err = apisresolver.GetManagedResource("user.zitadel.crossplane.io", "v1alpha1", "HumanUser", "HumanUserList")
+		if err != nil {
+			return errors.Wrap(err, "failed to get the reference target managed resource and its list for reference resolution")
+		}
+
+		rsp, err = r.Resolve(ctx, reference.ResolutionRequest{
+			CurrentValue: reference.FromPtrValue(mg.Spec.InitProvider.UserID),
+			Extract:      reference.ExternalName(),
+			Namespace:    mg.GetNamespace(),
+			Reference:    mg.Spec.InitProvider.HumanUserIDRef,
+			Selector:     mg.Spec.InitProvider.HumanUserIDSelector,
+			To:           reference.To{List: l, Managed: m},
+		})
+	}
+	if err != nil {
+		return errors.Wrap(err, "mg.Spec.InitProvider.UserID")
+	}
+	mg.Spec.InitProvider.UserID = reference.ToPtrValue(rsp.ResolvedValue)
+	mg.Spec.InitProvider.HumanUserIDRef = rsp.ResolvedReference
 
 	return nil
 }

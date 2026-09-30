@@ -13,7 +13,10 @@ A namespaced selector defaults to the managed resource's namespace; use an
 explicit namespace when intentionally referencing another namespace. Existing
 literal IDs remain supported. Organization references target the current
 `org.zitadel.m.crossplane.io/Organization` resource, not the legacy `Org` resource.
-AccessToken and Key user references target MachineUser.
+AccessToken and Key user references target MachineUser. Org, project, project
+grant and instance members, user grants and user metadata accept any user, so
+their references name the target: `humanUserIdRef`/`humanUserIdSelector`
+resolve a HumanUser; set `userId` directly for a MachineUser.
 
 ESO requires the PushSecret CRD and write permission for the remote destination.
 `deletionPolicy: None` retains the Vault value on deletion; choose `Delete` only

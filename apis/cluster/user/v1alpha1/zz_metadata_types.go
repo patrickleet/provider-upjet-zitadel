@@ -15,6 +15,14 @@ import (
 
 type MetadataInitParameters_2 struct {
 
+	// Reference to a HumanUser in user to populate userId.
+	// +kubebuilder:validation:Optional
+	HumanUserIDRef *v1.Reference `json:"humanUserIdRef,omitempty" tf:"-"`
+
+	// Selector for a HumanUser in user to populate userId.
+	// +kubebuilder:validation:Optional
+	HumanUserIDSelector *v1.Selector `json:"humanUserIdSelector,omitempty" tf:"-"`
+
 	// (String) The key of a metadata entry
 	// The key of a metadata entry
 	Key *string `json:"key,omitempty" tf:"key,omitempty"`
@@ -34,6 +42,9 @@ type MetadataInitParameters_2 struct {
 
 	// (String) ID of the user
 	// ID of the user
+	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/cluster/user/v1alpha1.HumanUser
+	// +crossplane:generate:reference:refFieldName=HumanUserIDRef
+	// +crossplane:generate:reference:selectorFieldName=HumanUserIDSelector
 	UserID *string `json:"userId,omitempty" tf:"user_id,omitempty"`
 
 	// (String) The string representation of a metadata entry value. For binary data, use the base64encode function.
@@ -65,6 +76,14 @@ type MetadataObservation_2 struct {
 
 type MetadataParameters_2 struct {
 
+	// Reference to a HumanUser in user to populate userId.
+	// +kubebuilder:validation:Optional
+	HumanUserIDRef *v1.Reference `json:"humanUserIdRef,omitempty" tf:"-"`
+
+	// Selector for a HumanUser in user to populate userId.
+	// +kubebuilder:validation:Optional
+	HumanUserIDSelector *v1.Selector `json:"humanUserIdSelector,omitempty" tf:"-"`
+
 	// (String) The key of a metadata entry
 	// The key of a metadata entry
 	// +kubebuilder:validation:Optional
@@ -86,6 +105,9 @@ type MetadataParameters_2 struct {
 
 	// (String) ID of the user
 	// ID of the user
+	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/cluster/user/v1alpha1.HumanUser
+	// +crossplane:generate:reference:refFieldName=HumanUserIDRef
+	// +crossplane:generate:reference:selectorFieldName=HumanUserIDSelector
 	// +kubebuilder:validation:Optional
 	UserID *string `json:"userId,omitempty" tf:"user_id,omitempty"`
 
@@ -132,7 +154,6 @@ type Metadata struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	// +kubebuilder:validation:XValidation:rule="!('*' in self.managementPolicies || 'Create' in self.managementPolicies || 'Update' in self.managementPolicies) || has(self.forProvider.key) || (has(self.initProvider) && has(self.initProvider.key))",message="spec.forProvider.key is a required parameter"
-	// +kubebuilder:validation:XValidation:rule="!('*' in self.managementPolicies || 'Create' in self.managementPolicies || 'Update' in self.managementPolicies) || has(self.forProvider.userId) || (has(self.initProvider) && has(self.initProvider.userId))",message="spec.forProvider.userId is a required parameter"
 	// +kubebuilder:validation:XValidation:rule="!('*' in self.managementPolicies || 'Create' in self.managementPolicies || 'Update' in self.managementPolicies) || has(self.forProvider.value) || (has(self.initProvider) && has(self.initProvider.value))",message="spec.forProvider.value is a required parameter"
 	Spec   MetadataSpec   `json:"spec"`
 	Status MetadataStatus `json:"status,omitempty"`
