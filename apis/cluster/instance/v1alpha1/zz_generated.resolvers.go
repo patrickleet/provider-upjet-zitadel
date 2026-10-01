@@ -13,6 +13,7 @@ import (
 	apisresolver "github.com/crossplane-contrib/provider-upjet-zitadel/internal/apis"
 	reference "github.com/crossplane/crossplane-runtime/v2/pkg/reference"
 	xpresource "github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	kindref "github.com/crossplane/upjet/v2/pkg/resource/kindref"
 	errors "github.com/pkg/errors"
 	client "sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -77,46 +78,104 @@ func (mg *Member) ResolveReferences(ctx context.Context, c client.Reader) error 
 
 	var rsp reference.ResolutionResponse
 	var err error
-	{
-		m, l, err = apisresolver.GetManagedResource("user.zitadel.crossplane.io", "v1alpha1", "HumanUser", "HumanUserList")
-		if err != nil {
-			return errors.Wrap(err, "failed to get the reference target managed resource and its list for reference resolution")
-		}
 
-		rsp, err = r.Resolve(ctx, reference.ResolutionRequest{
-			CurrentValue: reference.FromPtrValue(mg.Spec.ForProvider.UserID),
-			Extract:      reference.ExternalName(),
-			Namespace:    mg.GetNamespace(),
-			Reference:    mg.Spec.ForProvider.HumanUserIDRef,
-			Selector:     mg.Spec.ForProvider.HumanUserIDSelector,
-			To:           reference.To{List: l, Managed: m},
-		})
-	}
-	if err != nil {
-		return errors.Wrap(err, "mg.Spec.ForProvider.UserID")
-	}
-	mg.Spec.ForProvider.UserID = reference.ToPtrValue(rsp.ResolvedValue)
-	mg.Spec.ForProvider.HumanUserIDRef = rsp.ResolvedReference
 	{
-		m, l, err = apisresolver.GetManagedResource("user.zitadel.crossplane.io", "v1alpha1", "HumanUser", "HumanUserList")
-		if err != nil {
-			return errors.Wrap(err, "failed to get the reference target managed resource and its list for reference resolution")
+		ref := mg.Spec.ForProvider.UserIDRef.ToReference()
+		sel := mg.Spec.ForProvider.UserIDSelector.ToSelector()
+		apiVersion, kind := mg.Spec.ForProvider.UserIDRef.GetAPIVersion(), mg.Spec.ForProvider.UserIDRef.GetKind()
+		// The selector chooses the target when it will select a new reference.
+		if sel != nil && (ref == nil || sel.Policy.IsResolvePolicyAlways()) {
+			apiVersion, kind = mg.Spec.ForProvider.UserIDSelector.GetAPIVersion(), mg.Spec.ForProvider.UserIDSelector.GetKind()
 		}
+		switch {
+		case apiVersion == "" && kind == "", apiVersion == "" && kind == "HumanUser", apiVersion == "user.zitadel.crossplane.io/v1alpha1" && kind == "HumanUser":
+			{
+				m, l, err = apisresolver.GetManagedResource("user.zitadel.crossplane.io", "v1alpha1", "HumanUser", "HumanUserList")
+				if err != nil {
+					return errors.Wrap(err, "failed to get the reference target managed resource and its list for reference resolution")
+				}
+				rsp, err = r.Resolve(ctx, reference.ResolutionRequest{
+					CurrentValue: reference.FromPtrValue(mg.Spec.ForProvider.UserID),
+					Extract:      reference.ExternalName(),
+					Namespace:    mg.GetNamespace(),
+					Reference:    ref,
+					Selector:     sel,
+					To:           reference.To{List: l, Managed: m},
+				})
+			}
+		case apiVersion == "" && kind == "MachineUser", apiVersion == "user.zitadel.crossplane.io/v1alpha1" && kind == "MachineUser":
+			{
+				m, l, err = apisresolver.GetManagedResource("user.zitadel.crossplane.io", "v1alpha1", "MachineUser", "MachineUserList")
+				if err != nil {
+					return errors.Wrap(err, "failed to get the reference target managed resource and its list for reference resolution")
+				}
+				rsp, err = r.Resolve(ctx, reference.ResolutionRequest{
+					CurrentValue: reference.FromPtrValue(mg.Spec.ForProvider.UserID),
+					Extract:      reference.ExternalName(),
+					Namespace:    mg.GetNamespace(),
+					Reference:    ref,
+					Selector:     sel,
+					To:           reference.To{List: l, Managed: m},
+				})
+			}
+		default:
+			err = errors.Errorf("unsupported reference target apiVersion %q, kind %q: must be one of: user.zitadel.crossplane.io/v1alpha1 HumanUser (default), user.zitadel.crossplane.io/v1alpha1 MachineUser", apiVersion, kind)
+		}
+		if err != nil {
+			return errors.Wrap(err, "mg.Spec.ForProvider.UserID")
+		}
+		mg.Spec.ForProvider.UserID = reference.ToPtrValue(rsp.ResolvedValue)
+		mg.Spec.ForProvider.UserIDRef = kindref.NewReference(apiVersion, kind, rsp.ResolvedReference)
+	}
 
-		rsp, err = r.Resolve(ctx, reference.ResolutionRequest{
-			CurrentValue: reference.FromPtrValue(mg.Spec.InitProvider.UserID),
-			Extract:      reference.ExternalName(),
-			Namespace:    mg.GetNamespace(),
-			Reference:    mg.Spec.InitProvider.HumanUserIDRef,
-			Selector:     mg.Spec.InitProvider.HumanUserIDSelector,
-			To:           reference.To{List: l, Managed: m},
-		})
+	{
+		ref := mg.Spec.InitProvider.UserIDRef.ToReference()
+		sel := mg.Spec.InitProvider.UserIDSelector.ToSelector()
+		apiVersion, kind := mg.Spec.InitProvider.UserIDRef.GetAPIVersion(), mg.Spec.InitProvider.UserIDRef.GetKind()
+		// The selector chooses the target when it will select a new reference.
+		if sel != nil && (ref == nil || sel.Policy.IsResolvePolicyAlways()) {
+			apiVersion, kind = mg.Spec.InitProvider.UserIDSelector.GetAPIVersion(), mg.Spec.InitProvider.UserIDSelector.GetKind()
+		}
+		switch {
+		case apiVersion == "" && kind == "", apiVersion == "" && kind == "HumanUser", apiVersion == "user.zitadel.crossplane.io/v1alpha1" && kind == "HumanUser":
+			{
+				m, l, err = apisresolver.GetManagedResource("user.zitadel.crossplane.io", "v1alpha1", "HumanUser", "HumanUserList")
+				if err != nil {
+					return errors.Wrap(err, "failed to get the reference target managed resource and its list for reference resolution")
+				}
+				rsp, err = r.Resolve(ctx, reference.ResolutionRequest{
+					CurrentValue: reference.FromPtrValue(mg.Spec.InitProvider.UserID),
+					Extract:      reference.ExternalName(),
+					Namespace:    mg.GetNamespace(),
+					Reference:    ref,
+					Selector:     sel,
+					To:           reference.To{List: l, Managed: m},
+				})
+			}
+		case apiVersion == "" && kind == "MachineUser", apiVersion == "user.zitadel.crossplane.io/v1alpha1" && kind == "MachineUser":
+			{
+				m, l, err = apisresolver.GetManagedResource("user.zitadel.crossplane.io", "v1alpha1", "MachineUser", "MachineUserList")
+				if err != nil {
+					return errors.Wrap(err, "failed to get the reference target managed resource and its list for reference resolution")
+				}
+				rsp, err = r.Resolve(ctx, reference.ResolutionRequest{
+					CurrentValue: reference.FromPtrValue(mg.Spec.InitProvider.UserID),
+					Extract:      reference.ExternalName(),
+					Namespace:    mg.GetNamespace(),
+					Reference:    ref,
+					Selector:     sel,
+					To:           reference.To{List: l, Managed: m},
+				})
+			}
+		default:
+			err = errors.Errorf("unsupported reference target apiVersion %q, kind %q: must be one of: user.zitadel.crossplane.io/v1alpha1 HumanUser (default), user.zitadel.crossplane.io/v1alpha1 MachineUser", apiVersion, kind)
+		}
+		if err != nil {
+			return errors.Wrap(err, "mg.Spec.InitProvider.UserID")
+		}
+		mg.Spec.InitProvider.UserID = reference.ToPtrValue(rsp.ResolvedValue)
+		mg.Spec.InitProvider.UserIDRef = kindref.NewReference(apiVersion, kind, rsp.ResolvedReference)
 	}
-	if err != nil {
-		return errors.Wrap(err, "mg.Spec.InitProvider.UserID")
-	}
-	mg.Spec.InitProvider.UserID = reference.ToPtrValue(rsp.ResolvedValue)
-	mg.Spec.InitProvider.HumanUserIDRef = rsp.ResolvedReference
 
 	return nil
 }

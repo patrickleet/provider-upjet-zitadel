@@ -149,3 +149,7 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
+
+replace github.com/crossplane/upjet/v2 => github.com/patrickleet/upjet/v2 v2.2.1-0.20261001024837-ab86096d2801
+
+replace github.com/crossplane/crossplane-tools => github.com/patrickleet/crossplane-tools v0.0.0-20261001024926-2f32eaa1118d

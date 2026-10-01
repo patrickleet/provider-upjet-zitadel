@@ -6,11 +6,13 @@ package config
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"testing"
 
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	ujconfig "github.com/crossplane/upjet/v2/pkg/config"
+	"github.com/crossplane/upjet/v2/pkg/resource/kindref"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -172,12 +174,9 @@ func TestOrgMemberAndMetadataKeepOrgReference(t *testing.T) {
 	}
 }
 
-func TestUserIDReferencesHumanUser(t *testing.T) {
-	want := ujconfig.Reference{
-		TerraformName:     "zitadel_human_user",
-		RefFieldName:      "HumanUserIDRef",
-		SelectorFieldName: "HumanUserIDSelector",
-	}
+// userId accepts any ZITADEL user: userIdRef and userIdSelector resolve a
+// HumanUser by default, or a MachineUser with kind: MachineUser.
+func TestUserIDReferencesHumanUserOrMachineUser(t *testing.T) {
 	for _, resource := range []string{
 		"zitadel_instance_member",
 		"zitadel_org_member",
@@ -187,53 +186,230 @@ func TestUserIDReferencesHumanUser(t *testing.T) {
 		"zitadel_user_metadata",
 	} {
 		t.Run(resource, func(t *testing.T) {
-			assertReference(t, resource, "user_id", want)
+			assertReference(t, resource, "user_id", ujconfig.Reference{TerraformName: "zitadel_human_user"})
+			for scope, p := range bothProviders() {
+				got := p.Resources[resource].References["user_id"].Targets()
+				if len(got) != 2 || got[1].TerraformName != "zitadel_machine_user" {
+					t.Errorf("%s: %s.user_id additional targets = %+v, want only zitadel_machine_user", scope, resource, got)
+				}
+			}
 		})
 	}
 }
 
 var personaLabels = map[string]string{"example.org/persona": "owner"}
 
-func TestOrgMemberHumanUserSelector(t *testing.T) {
-	human := &user.HumanUser{ObjectMeta: metav1.ObjectMeta{
-		Name: "owner", Namespace: "tenant", Labels: personaLabels,
-		Annotations: map[string]string{"crossplane.io/external-name": "user-id"},
+const (
+	userAPIVersion        = "user.zitadel.m.crossplane.io/v1alpha1"
+	clusterUserAPIVersion = "user.zitadel.crossplane.io/v1alpha1"
+	unsupportedTargetErr  = `: must be one of: user.zitadel.m.crossplane.io/v1alpha1 HumanUser (default), user.zitadel.m.crossplane.io/v1alpha1 MachineUser`
+)
+
+func humanUser(namespace, name, externalName string, labels map[string]string) *user.HumanUser {
+	return &user.HumanUser{ObjectMeta: metav1.ObjectMeta{
+		Name: name, Namespace: namespace, Labels: labels,
+		Annotations: map[string]string{"crossplane.io/external-name": externalName},
 	}}
-	other := &user.HumanUser{ObjectMeta: metav1.ObjectMeta{
-		Name: "owner", Namespace: "other-tenant", Labels: personaLabels,
-		Annotations: map[string]string{"crossplane.io/external-name": "wrong-user"},
+}
+
+func machineUser(namespace, name, externalName string, labels map[string]string) *user.MachineUser {
+	return &user.MachineUser{ObjectMeta: metav1.ObjectMeta{
+		Name: name, Namespace: namespace, Labels: labels,
+		Annotations: map[string]string{"crossplane.io/external-name": externalName},
 	}}
-	member := &org.Member{ObjectMeta: metav1.ObjectMeta{Name: "owner", Namespace: "tenant"}}
-	member.Spec.ForProvider.HumanUserIDSelector = &xpv1.NamespacedSelector{MatchLabels: personaLabels}
-	c := refClient(t, human, other)
-	if err := member.ResolveReferences(context.Background(), c); err != nil {
-		t.Fatal(err)
-	}
-	if got := member.Spec.ForProvider.UserID; got == nil || *got != "user-id" {
-		t.Fatalf("resolved unexpected user: %v", got)
-	}
-	if got := member.Spec.ForProvider.HumanUserIDRef; got == nil || got.Name != human.Name {
-		t.Fatalf("reference was not persisted: %v", got)
+}
+
+// Both kinds share a name and labels in each test, so a test passes only if
+// the requested kind is the one resolved.
+func userObjects() []client.Object {
+	return []client.Object{
+		humanUser("tenant", "alice", "human-user-id", personaLabels),
+		machineUser("tenant", "alice", "machine-user-id", personaLabels),
+		humanUser("other-tenant", "alice", "wrong-human-user", personaLabels),
+		machineUser("other-tenant", "alice", "wrong-machine-user", personaLabels),
 	}
 }
 
-func TestClusterOrgMemberHumanUserReference(t *testing.T) {
+func TestUserGrantUserReference(t *testing.T) {
+	cases := map[string]struct {
+		ref         *kindref.NamespacedReference
+		wantUserID  string
+		wantRefKind string
+		wantErr     string
+	}{
+		"KindOmittedResolvesHumanUser": {
+			ref:        &kindref.NamespacedReference{Name: "alice"},
+			wantUserID: "human-user-id",
+		},
+		"HumanUser": {
+			ref:         &kindref.NamespacedReference{Kind: "HumanUser", Name: "alice"},
+			wantUserID:  "human-user-id",
+			wantRefKind: "HumanUser",
+		},
+		"MachineUser": {
+			ref:         &kindref.NamespacedReference{Kind: "MachineUser", Name: "alice"},
+			wantUserID:  "machine-user-id",
+			wantRefKind: "MachineUser",
+		},
+		"APIVersionAndKind": {
+			ref:         &kindref.NamespacedReference{APIVersion: userAPIVersion, Kind: "MachineUser", Name: "alice"},
+			wantUserID:  "machine-user-id",
+			wantRefKind: "MachineUser",
+		},
+		"UnknownKind": {
+			ref:     &kindref.NamespacedReference{Kind: "ServiceAccount", Name: "alice"},
+			wantErr: `mg.Spec.ForProvider.UserID: unsupported reference target apiVersion "", kind "ServiceAccount"` + unsupportedTargetErr,
+		},
+		// The cluster-scoped MachineUser has the same kind in another group.
+		"APIVersionMismatch": {
+			ref:     &kindref.NamespacedReference{APIVersion: clusterUserAPIVersion, Kind: "MachineUser", Name: "alice"},
+			wantErr: `mg.Spec.ForProvider.UserID: unsupported reference target apiVersion "user.zitadel.crossplane.io/v1alpha1", kind "MachineUser"` + unsupportedTargetErr,
+		},
+		"APIVersionWithoutKind": {
+			ref:     &kindref.NamespacedReference{APIVersion: userAPIVersion, Name: "alice"},
+			wantErr: `mg.Spec.ForProvider.UserID: unsupported reference target apiVersion "user.zitadel.m.crossplane.io/v1alpha1", kind ""` + unsupportedTargetErr,
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			grant := &user.Grant{ObjectMeta: metav1.ObjectMeta{Name: "grant", Namespace: "tenant"}}
+			grant.Spec.ForProvider.UserIDRef = tc.ref
+			err := grant.ResolveReferences(context.Background(), refClient(t, userObjects()...))
+			if tc.wantErr != "" {
+				if err == nil || err.Error() != tc.wantErr {
+					t.Fatalf("ResolveReferences(): want error %q, got %v", tc.wantErr, err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := grant.Spec.ForProvider.UserID; got == nil || *got != tc.wantUserID {
+				t.Fatalf("resolved unexpected user: %v", got)
+			}
+			if got := grant.Spec.ForProvider.UserIDRef; got == nil || got.Name != "alice" || got.Kind != tc.wantRefKind {
+				t.Fatalf("reference not persisted as given: %+v", got)
+			}
+		})
+	}
+}
+
+func TestOrgMemberUserSelector(t *testing.T) {
+	cases := map[string]struct {
+		sel         *kindref.NamespacedSelector
+		wantUserID  string
+		wantRefKind string
+	}{
+		"KindOmittedSelectsHumanUser": {
+			sel:        &kindref.NamespacedSelector{MatchLabels: personaLabels},
+			wantUserID: "human-user-id",
+		},
+		"MachineUser": {
+			sel:         &kindref.NamespacedSelector{Kind: "MachineUser", MatchLabels: personaLabels},
+			wantUserID:  "machine-user-id",
+			wantRefKind: "MachineUser",
+		},
+		"APIVersionAndKind": {
+			sel:         &kindref.NamespacedSelector{APIVersion: userAPIVersion, Kind: "MachineUser", MatchLabels: personaLabels},
+			wantUserID:  "machine-user-id",
+			wantRefKind: "MachineUser",
+		},
+	}
+	for name, tc := range cases {
+		t.Run(name, func(t *testing.T) {
+			member := &org.Member{ObjectMeta: metav1.ObjectMeta{Name: "owner", Namespace: "tenant"}}
+			member.Spec.ForProvider.UserIDSelector = tc.sel
+			if err := member.ResolveReferences(context.Background(), refClient(t, userObjects()...)); err != nil {
+				t.Fatal(err)
+			}
+			if got := member.Spec.ForProvider.UserID; got == nil || *got != tc.wantUserID {
+				t.Fatalf("resolved unexpected user: %v", got)
+			}
+			// The selected reference is persisted with the selector's kind,
+			// so later reconciles resolve the same kind.
+			ref := member.Spec.ForProvider.UserIDRef
+			if ref == nil || ref.Name != "alice" || ref.Kind != tc.wantRefKind || ref.APIVersion != tc.sel.APIVersion {
+				t.Fatalf("selected reference was not persisted: %+v", ref)
+			}
+		})
+	}
+}
+
+// A selector with the Always resolve policy selects again on every
+// reconcile, so its kind wins over the kind of the reference it set before.
+func TestOrgMemberAlwaysSelectorKindWins(t *testing.T) {
+	always := xpv1.ResolvePolicyAlways
+	member := &org.Member{ObjectMeta: metav1.ObjectMeta{Name: "owner", Namespace: "tenant"}}
+	member.Spec.ForProvider.UserID = ptrTo("human-user-id")
+	member.Spec.ForProvider.UserIDRef = &kindref.NamespacedReference{Kind: "HumanUser", Name: "alice"}
+	member.Spec.ForProvider.UserIDSelector = &kindref.NamespacedSelector{
+		Kind: "MachineUser", MatchLabels: personaLabels, Policy: &xpv1.Policy{Resolve: &always},
+	}
+	if err := member.ResolveReferences(context.Background(), refClient(t, userObjects()...)); err != nil {
+		t.Fatal(err)
+	}
+	if got := member.Spec.ForProvider.UserID; got == nil || *got != "machine-user-id" {
+		t.Fatalf("resolved unexpected user: %v", got)
+	}
+	if got := member.Spec.ForProvider.UserIDRef; got == nil || got.Kind != "MachineUser" {
+		t.Fatalf("reference kind not updated: %+v", got)
+	}
+}
+
+// Only the configured targets are looked up: a same-named kind in another
+// group (here the cluster-scoped MachineUser) is never resolved.
+func TestUserReferenceIgnoresUnrelatedSameNamedKind(t *testing.T) {
+	unrelated := &clusteruser.MachineUser{ObjectMeta: metav1.ObjectMeta{
+		Name: "ci-bot", Labels: personaLabels,
+		Annotations: map[string]string{"crossplane.io/external-name": "unrelated-user"},
+	}}
+	t.Run("Reference", func(t *testing.T) {
+		member := &org.Member{ObjectMeta: metav1.ObjectMeta{Name: "owner", Namespace: "tenant"}}
+		member.Spec.ForProvider.UserIDRef = &kindref.NamespacedReference{Kind: "MachineUser", Name: "ci-bot"}
+		err := member.ResolveReferences(context.Background(), refClient(t, unrelated))
+		if err == nil || !strings.Contains(err.Error(), "cannot get referenced resource") {
+			t.Fatalf("ResolveReferences(): want a not found error, got %v (user %v)", err, member.Spec.ForProvider.UserID)
+		}
+	})
+	t.Run("Selector", func(t *testing.T) {
+		member := &org.Member{ObjectMeta: metav1.ObjectMeta{Name: "owner", Namespace: "tenant"}}
+		member.Spec.ForProvider.UserIDSelector = &kindref.NamespacedSelector{Kind: "MachineUser", MatchLabels: personaLabels}
+		err := member.ResolveReferences(context.Background(), refClient(t, unrelated))
+		if err == nil || !strings.Contains(err.Error(), "no resources matched selector") {
+			t.Fatalf("ResolveReferences(): want a no match error, got %v (user %v)", err, member.Spec.ForProvider.UserID)
+		}
+	})
+}
+
+func TestClusterOrgMemberUserReference(t *testing.T) {
 	human := &clusteruser.HumanUser{ObjectMeta: metav1.ObjectMeta{
 		Name:        "owner",
-		Annotations: map[string]string{"crossplane.io/external-name": "user-id"},
+		Annotations: map[string]string{"crossplane.io/external-name": "human-user-id"},
 	}}
-	member := &clusterorg.Member{ObjectMeta: metav1.ObjectMeta{Name: "owner"}}
-	member.Spec.ForProvider.HumanUserIDRef = &xpv1.Reference{Name: human.Name}
-	if err := member.ResolveReferences(context.Background(), refClient(t, human)); err != nil {
-		t.Fatal(err)
+	machine := &clusteruser.MachineUser{ObjectMeta: metav1.ObjectMeta{
+		Name:        "owner",
+		Annotations: map[string]string{"crossplane.io/external-name": "machine-user-id"},
+	}}
+	for kind, want := range map[string]string{"": "human-user-id", "HumanUser": "human-user-id", "MachineUser": "machine-user-id"} {
+		member := &clusterorg.Member{ObjectMeta: metav1.ObjectMeta{Name: "owner"}}
+		member.Spec.ForProvider.UserIDRef = &kindref.Reference{Kind: kind, Name: "owner"}
+		if err := member.ResolveReferences(context.Background(), refClient(t, human, machine)); err != nil {
+			t.Fatal(err)
+		}
+		if got := member.Spec.ForProvider.UserID; got == nil || *got != want {
+			t.Fatalf("kind %q: resolved unexpected user: %v", kind, got)
+		}
 	}
-	if got := member.Spec.ForProvider.UserID; got == nil || *got != "user-id" {
-		t.Fatalf("resolved unexpected user: %v", got)
+	member := &clusterorg.Member{ObjectMeta: metav1.ObjectMeta{Name: "owner"}}
+	member.Spec.ForProvider.UserIDRef = &kindref.Reference{APIVersion: userAPIVersion, Kind: "MachineUser", Name: "owner"}
+	err := member.ResolveReferences(context.Background(), refClient(t, human, machine))
+	want := `mg.Spec.ForProvider.UserID: unsupported reference target apiVersion "user.zitadel.m.crossplane.io/v1alpha1", kind "MachineUser": must be one of: user.zitadel.crossplane.io/v1alpha1 HumanUser (default), user.zitadel.crossplane.io/v1alpha1 MachineUser`
+	if err == nil || err.Error() != want {
+		t.Fatalf("ResolveReferences(): want error %q, got %v", want, err)
 	}
 }
 
-// userId accepts any ZITADEL user, so a literal MachineUser ID must keep
-// working alongside the HumanUser reference fields.
+// A literal user ID keeps working without a reference.
 func TestUserGrantLiteralMachineUserID(t *testing.T) {
 	machineUserID := "machine-user-id"
 	grant := &user.Grant{ObjectMeta: metav1.ObjectMeta{Name: "automation", Namespace: "tenant"}}
@@ -244,7 +420,9 @@ func TestUserGrantLiteralMachineUserID(t *testing.T) {
 	if got := grant.Spec.ForProvider.UserID; got == nil || *got != machineUserID {
 		t.Fatalf("literal user changed: %v", got)
 	}
-	if grant.Spec.ForProvider.HumanUserIDRef != nil {
-		t.Fatalf("unexpected reference for literal user: %v", grant.Spec.ForProvider.HumanUserIDRef)
+	if grant.Spec.ForProvider.UserIDRef != nil {
+		t.Fatalf("unexpected reference for literal user: %v", grant.Spec.ForProvider.UserIDRef)
 	}
 }
+
+func ptrTo[T any](v T) *T { return &v }

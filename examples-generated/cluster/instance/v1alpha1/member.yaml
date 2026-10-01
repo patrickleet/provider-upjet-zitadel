@@ -8,8 +8,8 @@ metadata:
   name: default
 spec:
   forProvider:
-    humanUserIdSelector:
-      matchLabels:
-        testing.upbound.io/example-name: zitadel_human_user
     roles:
     - IAM_OWNER
+    userIdSelector:
+      matchLabels:
+        testing.upbound.io/example-name: zitadel_human_user

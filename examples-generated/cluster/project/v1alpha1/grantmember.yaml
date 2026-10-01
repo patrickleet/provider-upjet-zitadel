@@ -11,9 +11,6 @@ spec:
     grantIdSelector:
       matchLabels:
         testing.upbound.io/example-name: example
-    humanUserIdSelector:
-      matchLabels:
-        testing.upbound.io/example-name: zitadel_human_user
     orgIdSelector:
       matchLabels:
         testing.upbound.io/example-name: zitadel_org
@@ -22,3 +19,6 @@ spec:
         testing.upbound.io/example-name: zitadel_project
     roles:
     - PROJECT_GRANT_OWNER
+    userIdSelector:
+      matchLabels:
+        testing.upbound.io/example-name: zitadel_human_user

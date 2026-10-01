@@ -275,7 +275,7 @@ func newProvider(rootGroup string) *ujconfig.Provider {
 		r.References["org_id"] = ujconfig.Reference{
 			TerraformName: "zitadel_organization",
 		}
-		r.References["user_id"] = humanUserReference()
+		r.References["user_id"] = userReference()
 	})
 	pc.AddResourceConfigurator("zitadel_project_grant", func(r *ujconfig.Resource) {
 		r.ShortGroup = "project"
@@ -300,7 +300,7 @@ func newProvider(rootGroup string) *ujconfig.Provider {
 		r.References["grant_id"] = ujconfig.Reference{
 			TerraformName: "zitadel_project_grant",
 		}
-		r.References["user_id"] = humanUserReference()
+		r.References["user_id"] = userReference()
 	})
 
 	// Organizations
@@ -312,7 +312,7 @@ func newProvider(rootGroup string) *ujconfig.Provider {
 		r.References["org_id"] = ujconfig.Reference{
 			TerraformName: "zitadel_org",
 		}
-		r.References["user_id"] = humanUserReference()
+		r.References["user_id"] = userReference()
 	})
 	pc.AddResourceConfigurator("zitadel_org_metadata", func(r *ujconfig.Resource) {
 		r.ShortGroup = "org"
@@ -378,20 +378,20 @@ func newProvider(rootGroup string) *ujconfig.Provider {
 		r.References["project_grant_id"] = ujconfig.Reference{
 			TerraformName: "zitadel_project_grant",
 		}
-		r.References["user_id"] = humanUserReference()
+		r.References["user_id"] = userReference()
 	})
 	pc.AddResourceConfigurator("zitadel_user_metadata", func(r *ujconfig.Resource) {
 		r.ShortGroup = "user"
 		r.References["org_id"] = ujconfig.Reference{
 			TerraformName: "zitadel_organization",
 		}
-		r.References["user_id"] = humanUserReference()
+		r.References["user_id"] = userReference()
 	})
 
 	// Instance
 	pc.AddResourceConfigurator("zitadel_instance_member", func(r *ujconfig.Resource) {
 		r.ShortGroup = "instance"
-		r.References["user_id"] = humanUserReference()
+		r.References["user_id"] = userReference()
 	})
 	pc.AddResourceConfigurator("zitadel_instance_features", func(r *ujconfig.Resource) {
 		r.ShortGroup = "instance"
@@ -472,18 +472,16 @@ var orgScopedResources = []string{
 	"zitadel_verify_sms_otp_message_text",
 }
 
-// humanUserReference resolves a user_id argument from a HumanUser.
+// userReference resolves a user_id argument from a HumanUser (the default)
+// or a MachineUser.
 //
-// Membership, grant and metadata user_id arguments accept any ZITADEL user,
-// but upjet supports a single reference target per field. The reference and
-// selector fields are named after the target kind (humanUserIdRef and
-// humanUserIdSelector) so the target is explicit; MachineUser IDs can still
-// be set through the literal userId field.
-func humanUserReference() ujconfig.Reference {
+// Membership, grant and metadata user_id arguments accept any ZITADEL user.
+// The generated userIdRef and userIdSelector resolve a HumanUser unless they
+// set kind: MachineUser.
+func userReference() ujconfig.Reference {
 	return ujconfig.Reference{
 		TerraformName:     "zitadel_human_user",
-		RefFieldName:      "HumanUserIDRef",
-		SelectorFieldName: "HumanUserIDSelector",
+		AdditionalTargets: &[]ujconfig.ReferenceTarget{{TerraformName: "zitadel_machine_user"}},
 	}
 }
 

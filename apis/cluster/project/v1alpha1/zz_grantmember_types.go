@@ -11,6 +11,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	v1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	kindref "github.com/crossplane/upjet/v2/pkg/resource/kindref"
 )
 
 type GrantMemberInitParameters struct {
@@ -27,14 +28,6 @@ type GrantMemberInitParameters struct {
 	// Selector for a Grant in project to populate grantId.
 	// +kubebuilder:validation:Optional
 	GrantIDSelector *v1.Selector `json:"grantIdSelector,omitempty" tf:"-"`
-
-	// Reference to a HumanUser in user to populate userId.
-	// +kubebuilder:validation:Optional
-	HumanUserIDRef *v1.Reference `json:"humanUserIdRef,omitempty" tf:"-"`
-
-	// Selector for a HumanUser in user to populate userId.
-	// +kubebuilder:validation:Optional
-	HumanUserIDSelector *v1.Selector `json:"humanUserIdSelector,omitempty" tf:"-"`
 
 	// (String) ID of the organization. If not provided, the organization of the authenticated user/service account is used.
 	// ID of the organization. If not provided, the organization of the authenticated user/service account is used.
@@ -70,9 +63,24 @@ type GrantMemberInitParameters struct {
 	// (String) ID of the user
 	// ID of the user
 	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/cluster/user/v1alpha1.HumanUser
-	// +crossplane:generate:reference:refFieldName=HumanUserIDRef
-	// +crossplane:generate:reference:selectorFieldName=HumanUserIDSelector
+	// +crossplane:generate:reference:apiVersion=user.zitadel.crossplane.io/v1alpha1
+	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/cluster/user/v1alpha1.MachineUser
+	// +crossplane:generate:reference:apiVersion=user.zitadel.crossplane.io/v1alpha1
 	UserID *string `json:"userId,omitempty" tf:"user_id,omitempty"`
+
+	// Reference to a HumanUser in user (default) or MachineUser in user to populate userId.
+	// Set kind, and apiVersion if kind alone is ambiguous, to choose a target other than the default.
+	// +kubebuilder:validation:XValidation:rule="!has(self.kind) || self.kind in ['HumanUser', 'MachineUser']",message="kind must be one of HumanUser, MachineUser"
+	// +kubebuilder:validation:XValidation:rule="!has(self.apiVersion) || (has(self.kind) && (self.apiVersion + '/' + self.kind) in ['user.zitadel.crossplane.io/v1alpha1/HumanUser', 'user.zitadel.crossplane.io/v1alpha1/MachineUser'])",message="apiVersion and kind must be one of: user.zitadel.crossplane.io/v1alpha1 HumanUser, user.zitadel.crossplane.io/v1alpha1 MachineUser"
+	// +kubebuilder:validation:Optional
+	UserIDRef *kindref.Reference `json:"userIdRef,omitempty" tf:"-"`
+
+	// Selector for a HumanUser in user (default) or MachineUser in user to populate userId.
+	// Set kind, and apiVersion if kind alone is ambiguous, to choose a target other than the default.
+	// +kubebuilder:validation:XValidation:rule="!has(self.kind) || self.kind in ['HumanUser', 'MachineUser']",message="kind must be one of HumanUser, MachineUser"
+	// +kubebuilder:validation:XValidation:rule="!has(self.apiVersion) || (has(self.kind) && (self.apiVersion + '/' + self.kind) in ['user.zitadel.crossplane.io/v1alpha1/HumanUser', 'user.zitadel.crossplane.io/v1alpha1/MachineUser'])",message="apiVersion and kind must be one of: user.zitadel.crossplane.io/v1alpha1 HumanUser, user.zitadel.crossplane.io/v1alpha1 MachineUser"
+	// +kubebuilder:validation:Optional
+	UserIDSelector *kindref.Selector `json:"userIdSelector,omitempty" tf:"-"`
 }
 
 type GrantMemberObservation struct {
@@ -118,14 +126,6 @@ type GrantMemberParameters struct {
 	// +kubebuilder:validation:Optional
 	GrantIDSelector *v1.Selector `json:"grantIdSelector,omitempty" tf:"-"`
 
-	// Reference to a HumanUser in user to populate userId.
-	// +kubebuilder:validation:Optional
-	HumanUserIDRef *v1.Reference `json:"humanUserIdRef,omitempty" tf:"-"`
-
-	// Selector for a HumanUser in user to populate userId.
-	// +kubebuilder:validation:Optional
-	HumanUserIDSelector *v1.Selector `json:"humanUserIdSelector,omitempty" tf:"-"`
-
 	// (String) ID of the organization. If not provided, the organization of the authenticated user/service account is used.
 	// ID of the organization. If not provided, the organization of the authenticated user/service account is used.
 	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/cluster/org/v1alpha1.Organization
@@ -163,10 +163,25 @@ type GrantMemberParameters struct {
 	// (String) ID of the user
 	// ID of the user
 	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/cluster/user/v1alpha1.HumanUser
-	// +crossplane:generate:reference:refFieldName=HumanUserIDRef
-	// +crossplane:generate:reference:selectorFieldName=HumanUserIDSelector
+	// +crossplane:generate:reference:apiVersion=user.zitadel.crossplane.io/v1alpha1
+	// +crossplane:generate:reference:type=github.com/crossplane-contrib/provider-upjet-zitadel/apis/cluster/user/v1alpha1.MachineUser
+	// +crossplane:generate:reference:apiVersion=user.zitadel.crossplane.io/v1alpha1
 	// +kubebuilder:validation:Optional
 	UserID *string `json:"userId,omitempty" tf:"user_id,omitempty"`
+
+	// Reference to a HumanUser in user (default) or MachineUser in user to populate userId.
+	// Set kind, and apiVersion if kind alone is ambiguous, to choose a target other than the default.
+	// +kubebuilder:validation:XValidation:rule="!has(self.kind) || self.kind in ['HumanUser', 'MachineUser']",message="kind must be one of HumanUser, MachineUser"
+	// +kubebuilder:validation:XValidation:rule="!has(self.apiVersion) || (has(self.kind) && (self.apiVersion + '/' + self.kind) in ['user.zitadel.crossplane.io/v1alpha1/HumanUser', 'user.zitadel.crossplane.io/v1alpha1/MachineUser'])",message="apiVersion and kind must be one of: user.zitadel.crossplane.io/v1alpha1 HumanUser, user.zitadel.crossplane.io/v1alpha1 MachineUser"
+	// +kubebuilder:validation:Optional
+	UserIDRef *kindref.Reference `json:"userIdRef,omitempty" tf:"-"`
+
+	// Selector for a HumanUser in user (default) or MachineUser in user to populate userId.
+	// Set kind, and apiVersion if kind alone is ambiguous, to choose a target other than the default.
+	// +kubebuilder:validation:XValidation:rule="!has(self.kind) || self.kind in ['HumanUser', 'MachineUser']",message="kind must be one of HumanUser, MachineUser"
+	// +kubebuilder:validation:XValidation:rule="!has(self.apiVersion) || (has(self.kind) && (self.apiVersion + '/' + self.kind) in ['user.zitadel.crossplane.io/v1alpha1/HumanUser', 'user.zitadel.crossplane.io/v1alpha1/MachineUser'])",message="apiVersion and kind must be one of: user.zitadel.crossplane.io/v1alpha1 HumanUser, user.zitadel.crossplane.io/v1alpha1 MachineUser"
+	// +kubebuilder:validation:Optional
+	UserIDSelector *kindref.Selector `json:"userIdSelector,omitempty" tf:"-"`
 }
 
 // GrantMemberSpec defines the desired state of GrantMember
