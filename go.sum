@@ -228,10 +228,10 @@ github.com/onsi/ginkgo/v2 v2.27.2 h1:LzwLj0b89qtIy6SSASkzlNvX6WktqurSHwkk2ipF/Ns
 github.com/onsi/ginkgo/v2 v2.27.2/go.mod h1:ArE1D/XhNXBXCBkKOLkbsb2c81dQHCRcF5zwn/ykDRo=
 github.com/onsi/gomega v1.38.3 h1:eTX+W6dobAYfFeGC2PV6RwXRu/MyT+cQguijutvkpSM=
 github.com/onsi/gomega v1.38.3/go.mod h1:ZCU1pkQcXDO5Sl9/VVEGlDyp+zm0m1cmeG5TOzLgdh4=
-github.com/patrickleet/crossplane-tools v0.0.0-20261001011720-a0d953fb4505 h1:mh6wKwqQ91LrZsf//NnRa/Oaudl000x3z3LOKDA797o=
-github.com/patrickleet/crossplane-tools v0.0.0-20261001011720-a0d953fb4505/go.mod h1:8etxwmP4cZwJDwen4+PQlnc1tggltAhEfyyigmdHulQ=
-github.com/patrickleet/upjet/v2 v2.2.1-0.20261001011700-93b099ae8516 h1:58vtZyn9BSOfjEP/sb2mqryJH3e3Ng+8K7k+psbhTaQ=
-github.com/patrickleet/upjet/v2 v2.2.1-0.20261001011700-93b099ae8516/go.mod h1:jDCqvAFLrVEzqE+pywmQ5u18HbJK5j5Jj4cTQpqOLqY=
+github.com/patrickleet/crossplane-tools v0.0.0-20261001024926-2f32eaa1118d h1:MxNy1+mUlky5M1AVfQCdgSbociZr1RVHQAxNo4jeDjk=
+github.com/patrickleet/crossplane-tools v0.0.0-20261001024926-2f32eaa1118d/go.mod h1:8etxwmP4cZwJDwen4+PQlnc1tggltAhEfyyigmdHulQ=
+github.com/patrickleet/upjet/v2 v2.2.1-0.20261001024837-ab86096d2801 h1:pa1GS6yDOPeFXEbzOo31wIU1/ateG5grtYvqfUQyNkk=
+github.com/patrickleet/upjet/v2 v2.2.1-0.20261001024837-ab86096d2801/go.mod h1:jDCqvAFLrVEzqE+pywmQ5u18HbJK5j5Jj4cTQpqOLqY=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=

@@ -481,7 +481,7 @@ var orgScopedResources = []string{
 func userReference() ujconfig.Reference {
 	return ujconfig.Reference{
 		TerraformName:     "zitadel_human_user",
-		AdditionalTargets: []ujconfig.ReferenceTarget{{TerraformName: "zitadel_machine_user"}},
+		AdditionalTargets: &[]ujconfig.ReferenceTarget{{TerraformName: "zitadel_machine_user"}},
 	}
 }
 

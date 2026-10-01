@@ -188,8 +188,8 @@ func TestUserIDReferencesHumanUserOrMachineUser(t *testing.T) {
 		t.Run(resource, func(t *testing.T) {
 			assertReference(t, resource, "user_id", ujconfig.Reference{TerraformName: "zitadel_human_user"})
 			for scope, p := range bothProviders() {
-				got := p.Resources[resource].References["user_id"].AdditionalTargets
-				if len(got) != 1 || got[0].TerraformName != "zitadel_machine_user" {
+				got := p.Resources[resource].References["user_id"].Targets()
+				if len(got) != 2 || got[1].TerraformName != "zitadel_machine_user" {
 					t.Errorf("%s: %s.user_id additional targets = %+v, want only zitadel_machine_user", scope, resource, got)
 				}
 			}
