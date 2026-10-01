@@ -59,14 +59,42 @@ spec:
             properties:
               forProvider:
                 properties:
-                  humanUserIdRef:
-                    description: Reference to a HumanUser in user to populate userId.
+                  roles:
+                    description: |-
+                      (Set of String) List of roles granted. Instance member roles must start with 'IAM_' (e.g., IAM_OWNER, IAM_OWNER_VIEWER). See https://zitadel.com/docs/guides/manage/console/administrators for available roles.
+                      List of roles granted. Instance member roles must start with 'IAM_' (e.g., IAM_OWNER, IAM_OWNER_VIEWER). See https://zitadel.com/docs/guides/manage/console/administrators for available roles.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  userId:
+                    description: |-
+                      (String) ID of the user
+                      ID of the user
+                    type: string
+                  userIdRef:
+                    description: |-
+                      Reference to a HumanUser in user (default) or MachineUser in user to populate userId.
+                      Set kind, and apiVersion if kind alone is ambiguous, to choose a target other than the default.
                     properties:
+                      apiVersion:
+                        description: |-
+                          APIVersion of the referenced object, as group/version. Only needed
+                          when Kind matches more than one of the field's targets.
+                        minLength: 1
+                        type: string
+                      kind:
+                        description: Kind of the referenced object. Defaults to the
+                          field's default kind.
+                        minLength: 1
+                        type: string
                       name:
                         description: Name of the referenced object.
                         type: string
                       namespace:
-                        description: Namespace of the referenced object
+                        description: |-
+                          Namespace of the referenced object. Defaults to the namespace of the
+                          referencing object.
                         type: string
                       policy:
                         description: Policies for referencing.
@@ -96,9 +124,30 @@ spec:
                     required:
                     - name
                     type: object
-                  humanUserIdSelector:
-                    description: Selector for a HumanUser in user to populate userId.
+                    x-kubernetes-validations:
+                    - message: kind must be one of HumanUser, MachineUser
+                      rule: '!has(self.kind) || self.kind in [''HumanUser'', ''MachineUser'']'
+                    - message: 'apiVersion and kind must be one of: user.zitadel.m.crossplane.io/v1alpha1
+                        HumanUser, user.zitadel.m.crossplane.io/v1alpha1 MachineUser'
+                      rule: '!has(self.apiVersion) || (has(self.kind) && (self.apiVersion
+                        + ''/'' + self.kind) in [''user.zitadel.m.crossplane.io/v1alpha1/HumanUser'',
+                        ''user.zitadel.m.crossplane.io/v1alpha1/MachineUser''])'
+                  userIdSelector:
+                    description: |-
+                      Selector for a HumanUser in user (default) or MachineUser in user to populate userId.
+                      Set kind, and apiVersion if kind alone is ambiguous, to choose a target other than the default.
                     properties:
+                      apiVersion:
+                        description: |-
+                          APIVersion of the selected object, as group/version. Only needed when
+                          Kind matches more than one of the field's targets.
+                        minLength: 1
+                        type: string
+                      kind:
+                        description: Kind of the selected object. Defaults to the
+                          field's default kind.
+                        minLength: 1
+                        type: string
                       matchControllerRef:
                         description: |-
                           MatchControllerRef ensures an object with the same controller reference
@@ -111,7 +160,9 @@ spec:
                           is selected.
                         type: object
                       namespace:
-                        description: Namespace for the selector
+                        description: |-
+                          Namespace for the selector. Defaults to the namespace of the
+                          referencing object.
                         type: string
                       policy:
                         description: Policies for selection.
@@ -139,19 +190,14 @@ spec:
                             type: string
                         type: object
                     type: object
-                  roles:
-                    description: |-
-                      (Set of String) List of roles granted. Instance member roles must start with 'IAM_' (e.g., IAM_OWNER, IAM_OWNER_VIEWER). See https://zitadel.com/docs/guides/manage/console/administrators for available roles.
-                      List of roles granted. Instance member roles must start with 'IAM_' (e.g., IAM_OWNER, IAM_OWNER_VIEWER). See https://zitadel.com/docs/guides/manage/console/administrators for available roles.
-                    items:
-                      type: string
-                    type: array
-                    x-kubernetes-list-type: set
-                  userId:
-                    description: |-
-                      (String) ID of the user
-                      ID of the user
-                    type: string
+                    x-kubernetes-validations:
+                    - message: kind must be one of HumanUser, MachineUser
+                      rule: '!has(self.kind) || self.kind in [''HumanUser'', ''MachineUser'']'
+                    - message: 'apiVersion and kind must be one of: user.zitadel.m.crossplane.io/v1alpha1
+                        HumanUser, user.zitadel.m.crossplane.io/v1alpha1 MachineUser'
+                      rule: '!has(self.apiVersion) || (has(self.kind) && (self.apiVersion
+                        + ''/'' + self.kind) in [''user.zitadel.m.crossplane.io/v1alpha1/HumanUser'',
+                        ''user.zitadel.m.crossplane.io/v1alpha1/MachineUser''])'
                 type: object
               initProvider:
                 description: |-
@@ -166,14 +212,42 @@ spec:
                   for example because of an external controller is managing them, like an
                   autoscaler.
                 properties:
-                  humanUserIdRef:
-                    description: Reference to a HumanUser in user to populate userId.
+                  roles:
+                    description: |-
+                      (Set of String) List of roles granted. Instance member roles must start with 'IAM_' (e.g., IAM_OWNER, IAM_OWNER_VIEWER). See https://zitadel.com/docs/guides/manage/console/administrators for available roles.
+                      List of roles granted. Instance member roles must start with 'IAM_' (e.g., IAM_OWNER, IAM_OWNER_VIEWER). See https://zitadel.com/docs/guides/manage/console/administrators for available roles.
+                    items:
+                      type: string
+                    type: array
+                    x-kubernetes-list-type: set
+                  userId:
+                    description: |-
+                      (String) ID of the user
+                      ID of the user
+                    type: string
+                  userIdRef:
+                    description: |-
+                      Reference to a HumanUser in user (default) or MachineUser in user to populate userId.
+                      Set kind, and apiVersion if kind alone is ambiguous, to choose a target other than the default.
                     properties:
+                      apiVersion:
+                        description: |-
+                          APIVersion of the referenced object, as group/version. Only needed
+                          when Kind matches more than one of the field's targets.
+                        minLength: 1
+                        type: string
+                      kind:
+                        description: Kind of the referenced object. Defaults to the
+                          field's default kind.
+                        minLength: 1
+                        type: string
                       name:
                         description: Name of the referenced object.
                         type: string
                       namespace:
-                        description: Namespace of the referenced object
+                        description: |-
+                          Namespace of the referenced object. Defaults to the namespace of the
+                          referencing object.
                         type: string
                       policy:
                         description: Policies for referencing.
@@ -203,9 +277,30 @@ spec:
                     required:
                     - name
                     type: object
-                  humanUserIdSelector:
-                    description: Selector for a HumanUser in user to populate userId.
+                    x-kubernetes-validations:
+                    - message: kind must be one of HumanUser, MachineUser
+                      rule: '!has(self.kind) || self.kind in [''HumanUser'', ''MachineUser'']'
+                    - message: 'apiVersion and kind must be one of: user.zitadel.m.crossplane.io/v1alpha1
+                        HumanUser, user.zitadel.m.crossplane.io/v1alpha1 MachineUser'
+                      rule: '!has(self.apiVersion) || (has(self.kind) && (self.apiVersion
+                        + ''/'' + self.kind) in [''user.zitadel.m.crossplane.io/v1alpha1/HumanUser'',
+                        ''user.zitadel.m.crossplane.io/v1alpha1/MachineUser''])'
+                  userIdSelector:
+                    description: |-
+                      Selector for a HumanUser in user (default) or MachineUser in user to populate userId.
+                      Set kind, and apiVersion if kind alone is ambiguous, to choose a target other than the default.
                     properties:
+                      apiVersion:
+                        description: |-
+                          APIVersion of the selected object, as group/version. Only needed when
+                          Kind matches more than one of the field's targets.
+                        minLength: 1
+                        type: string
+                      kind:
+                        description: Kind of the selected object. Defaults to the
+                          field's default kind.
+                        minLength: 1
+                        type: string
                       matchControllerRef:
                         description: |-
                           MatchControllerRef ensures an object with the same controller reference
@@ -218,7 +313,9 @@ spec:
                           is selected.
                         type: object
                       namespace:
-                        description: Namespace for the selector
+                        description: |-
+                          Namespace for the selector. Defaults to the namespace of the
+                          referencing object.
                         type: string
                       policy:
                         description: Policies for selection.
@@ -246,19 +343,14 @@ spec:
                             type: string
                         type: object
                     type: object
-                  roles:
-                    description: |-
-                      (Set of String) List of roles granted. Instance member roles must start with 'IAM_' (e.g., IAM_OWNER, IAM_OWNER_VIEWER). See https://zitadel.com/docs/guides/manage/console/administrators for available roles.
-                      List of roles granted. Instance member roles must start with 'IAM_' (e.g., IAM_OWNER, IAM_OWNER_VIEWER). See https://zitadel.com/docs/guides/manage/console/administrators for available roles.
-                    items:
-                      type: string
-                    type: array
-                    x-kubernetes-list-type: set
-                  userId:
-                    description: |-
-                      (String) ID of the user
-                      ID of the user
-                    type: string
+                    x-kubernetes-validations:
+                    - message: kind must be one of HumanUser, MachineUser
+                      rule: '!has(self.kind) || self.kind in [''HumanUser'', ''MachineUser'']'
+                    - message: 'apiVersion and kind must be one of: user.zitadel.m.crossplane.io/v1alpha1
+                        HumanUser, user.zitadel.m.crossplane.io/v1alpha1 MachineUser'
+                      rule: '!has(self.apiVersion) || (has(self.kind) && (self.apiVersion
+                        + ''/'' + self.kind) in [''user.zitadel.m.crossplane.io/v1alpha1/HumanUser'',
+                        ''user.zitadel.m.crossplane.io/v1alpha1/MachineUser''])'
                 type: object
               managementPolicies:
                 default:

@@ -8,11 +8,11 @@ metadata:
   name: default
 spec:
   forProvider:
-    humanUserIdSelector:
-      matchLabels:
-        testing.upbound.io/example-name: zitadel_human_user
     key: a_key
     orgIdSelector:
       matchLabels:
         testing.upbound.io/example-name: zitadel_org
+    userIdSelector:
+      matchLabels:
+        testing.upbound.io/example-name: zitadel_human_user
     value: a_value
